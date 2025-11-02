@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: mortalidad-app
+    environment:
+      ENV: development
+      PORT: 8050
+      DATA_DIR: /app/data/raw
+      CACHE_TIMEOUT: 300
+    volumes:
+      - ./src:/app/src
+      - ./assets:/app/assets
+      - ./data:/app/data
+      - ./pyproject.toml:/app/pyproject.toml:ro
+    ports:
+      - "8050:8050"
+    command: gunicorn mortalidad.app:server --bind 0.0.0.0:8050 --workers 2 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

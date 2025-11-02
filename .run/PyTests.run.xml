@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PyTests" type="tests" factoryName="py.test">
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="ENV" value="development" />
+      <env name="DATA_DIR" value="$PROJECT_DIR$/data/raw" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests" />
+    <option name="SCRIPT_PARAMETERS" value="--maxfail=1 --disable-warnings" />
+    <option name="TEST_TYPE" value="TEST_SCRIPT" />
+    <option name="PATTERN" value="" />
+    <option name="USE_PATTERN" value="false" />
+    <method v="2" />
+  </configuration>
+</component>

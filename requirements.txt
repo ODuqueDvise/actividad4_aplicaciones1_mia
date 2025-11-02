@@ -1,0 +1,12 @@
+dash>=2.14.2,<3.0.0
+gunicorn>=21.2.0,<22.0.0
+openpyxl>=3.1.2,<4.0.0
+pandera>=0.17.0,<0.19.0
+pandas>=2.1.4,<3.0.0
+Flask-Caching>=2.0.2,<3.0.0
+pyarrow>=15,<16; python_version < "3.13"
+pyarrow>=17; python_version >= "3.13"
+fastparquet>=2024.5.0
+pydantic-settings>=2.1.0,<3.0.0
+python-dotenv>=1.0.1,<2.0.0
+click>=8.1.7,<9.0.0

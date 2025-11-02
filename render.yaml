@@ -1,0 +1,28 @@
+# Render blueprint configuration
+# Variables recomendadas:
+#   ENV=production
+#   PORT=8050 (Render asigna automáticamente)
+#   DATA_DIR=data/raw
+#   CACHE_TIMEOUT=300
+#   MAPBOX_TOKEN=<opcional>
+services:
+  - type: web
+    name: mortalidad-colombia-2019
+    env: python
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      pip install .
+    startCommand: gunicorn mortalidad.app:server --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATA_DIR
+        value: data/raw
+      - key: CACHE_TIMEOUT
+        value: "300"
+      - key: MAPBOX_TOKEN
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
