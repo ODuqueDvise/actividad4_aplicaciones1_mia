@@ -53,8 +53,25 @@ def test_build_choropleth_returns_figure(sample_df: pd.DataFrame) -> None:
     """The map builder must return a non-empty Plotly figure."""
     figure = map_component.build_choropleth_figure(sample_df)
     assert isinstance(figure, go.Figure)
-    assert len(figure.data) == 1
-    assert figure.data[0].type in {"choropleth", "scattergeo"}
+    assert len(figure.data) >= 1
+    trace_types = {trace.type for trace in figure.data}
+    expected_types = {"choroplethmapbox", "scattermapbox"}
+    assert trace_types & expected_types
+
+
+def test_map_renders_multiple_markers_for_single_department(sample_df: pd.DataFrame) -> None:
+    """When a single department is present, the map must display municipal markers."""
+    bogota_df = sample_df[sample_df["depto_cod"] == "11"].copy()
+    bogota_df.loc[1, "muni_cod"] = "11002"
+    bogota_df.loc[1, "municipio"] = "Usaquén"
+    bogota_df.loc[1, "lat"] = 4.754
+    bogota_df.loc[1, "lon"] = -74.03
+
+    figure = map_component.build_choropleth_figure(bogota_df)
+    assert isinstance(figure, go.Figure)
+    scatter_traces = [trace for trace in figure.data if trace.type == "scattermapbox"]
+    assert scatter_traces
+    assert len(scatter_traces[0]["lat"]) == bogota_df["muni_cod"].nunique()
 
 
 def test_build_monthly_line_contains_scatter_trace(sample_df: pd.DataFrame) -> None:

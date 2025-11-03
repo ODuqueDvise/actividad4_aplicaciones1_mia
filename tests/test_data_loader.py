@@ -41,18 +41,21 @@ def synthetic_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     records_df = pd.DataFrame(
         {
-            "DPTO_OCURRE": [11],
-            "MUN_OCURRE": [11001],
-            "SEXO": ["M"],
-            "GRUPO_EDAD1": [5],
-            "FECHA_DEF": [pd.Timestamp("2019-05-10")],
-            "CAUSA_DEF": ["x95"],
+            "DPTO_OCURRE": [11, 11],
+            "MUN_OCURRE": [11001, 11001],
+            "SEXO": ["M", "F"],
+            "GRUPO_EDAD1": [5, 6],
+            "FECHA_DEF": [pd.Timestamp("2019-05-10"), pd.Timestamp("2019-06-01")],
+            "CAUSA_DEF": ["x95", "X958"],
         }
     )
     causes_df = pd.DataFrame(
         {
-            "CODIGO": ["X95"],
-            "DESCRIPCION": ["Agresión con arma de fuego (homicidio)"],
+            "CODIGO": ["X95", "X958"],
+            "DESCRIPCION": [
+                "Agresión con arma de fuego (homicidio)",
+                "Agresión con arma de fuego, intento",
+            ],
         }
     )
     divipola_df = pd.DataFrame(
@@ -80,9 +83,13 @@ def test_load_data_processes_and_caches(synthetic_env: Path) -> None:
     """Ensure the pipeline processes inputs and stores cache."""
     df = data_loader.load_data(force_refresh=True)
     assert list(df.columns) == EXPECTED_COLUMNS
-    assert len(df) == 1
+    assert len(df) == 2
 
-    record = df.iloc[0]
+    homicide_flags = df.set_index("causa_cod")["homicidio_x95"].to_dict()
+    assert homicide_flags["X95"] == 1
+    assert homicide_flags["X958"] == 1
+
+    record = df[df["causa_cod"] == "X95"].iloc[0]
     assert record["depto_cod"] == "11"
     assert record["depto"] == "Bogotá D.C."
     assert record["muni_cod"] == "11001"
@@ -102,7 +109,7 @@ def test_load_data_processes_and_caches(synthetic_env: Path) -> None:
     assert cache_path.exists()
 
     validated = MORTALITY_SCHEMA.validate(df.copy())
-    assert len(validated) == 1
+    assert len(validated) == 2
 
 
 def test_load_data_reuses_cache(synthetic_env: Path) -> None:
@@ -115,5 +122,5 @@ def test_load_data_reuses_cache(synthetic_env: Path) -> None:
     mtime_after = cache_path.stat().st_mtime
 
     assert mtime_after == mtime_before
-    assert len(df_cached) == 1
-    assert df_cached.iloc[0]["causa_cod"] == "X95"
+    assert len(df_cached) == 2
+    assert set(df_cached["causa_cod"]) == {"X95", "X958"}

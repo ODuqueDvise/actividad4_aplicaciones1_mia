@@ -74,6 +74,7 @@ def build_stacked_bar_figure(
         yaxis_title="Defunciones",
         barmode="stack",
         margin=dict(l=10, r=10, t=60, b=60),
+        height=400,
     )
     figure.update_yaxes(tickformat=",")
     if normalize:
@@ -101,6 +102,7 @@ def render(
             dcc.Graph(
                 id="mortality-stacked",
                 figure=figure,
+                style={"width": "100%", "height": "100%", "minHeight": "340px"},
                 config={"displaylogo": False, "responsive": True},
             ),
         ],

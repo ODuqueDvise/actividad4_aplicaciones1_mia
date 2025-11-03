@@ -19,7 +19,7 @@ ifeq ($(PYTHON_BIN),)
 $(error No se encontró un intérprete de Python 3.12+; instala Python 3.12 (recomendado) o ajusta PYTHON_CANDIDATES)
 endif
 
-.PHONY: venv dev-install run clean-venv doctor
+.PHONY: venv dev-install run clean-venv doctor ingest validate
 
 venv:
 	@if [ ! -d "$(VENV)" ]; then \
@@ -52,6 +52,22 @@ run:
 	fi
 	@echo ">> Iniciando aplicación Dash (http://localhost:8050)"
 	@PYTHONPATH="$(PROJECT_ROOT)/src" "$(PYTHON)" -m mortalidad.app
+
+ingest: dev-install
+	@if [ ! -d "$(VENV_BIN)" ]; then \
+		echo ">> Entorno virtual ausente; ejecutando 'make dev-install'"; \
+		$(MAKE) --no-print-directory dev-install; \
+	fi
+	@echo ">> Ejecutando pipeline de ingestión"
+	@PYTHONPATH="$(PROJECT_ROOT)/src" "$(PYTHON)" -m mortalidad.cli ingest
+
+validate: dev-install
+	@if [ ! -d "$(VENV_BIN)" ]; then \
+		echo ">> Entorno virtual ausente; ejecutando 'make dev-install'"; \
+		$(MAKE) --no-print-directory dev-install; \
+	fi
+	@echo ">> Validando dataset procesado"
+	@PYTHONPATH="$(PROJECT_ROOT)/src" "$(PYTHON)" -m mortalidad.cli validate
 
 clean-venv:
 	@if [ -d "$(VENV)" ]; then \

@@ -55,6 +55,7 @@ def build_lowest_mortality_pie(
     figure.update_layout(
         template="plotly_white",
         margin=dict(l=10, r=10, t=60, b=10),
+        height=360,
         legend_title="Municipio",
     )
     return figure
@@ -73,6 +74,7 @@ def render(data: pd.DataFrame | None = None, title: str | None = None) -> html.D
             dcc.Graph(
                 id="mortality-pie",
                 figure=figure,
+                style={"width": "100%", "height": "100%", "minHeight": "320px"},
                 config={"displaylogo": False, "responsive": True},
             ),
         ],

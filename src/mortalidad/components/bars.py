@@ -78,6 +78,7 @@ def build_top_homicide_bars(
         xaxis_title="Municipio",
         yaxis_title="Homicidios (X95)",
         margin=dict(l=10, r=10, t=60, b=40),
+        height=380,
     )
     figure.update_yaxes(tickformat=",")
     return figure
@@ -96,6 +97,7 @@ def render(data: pd.DataFrame | None = None, title: str | None = None) -> html.D
             dcc.Graph(
                 id="mortality-bars",
                 figure=figure,
+                style={"width": "100%", "height": "100%", "minHeight": "320px"},
                 config={"displaylogo": False, "responsive": True},
             ),
         ],

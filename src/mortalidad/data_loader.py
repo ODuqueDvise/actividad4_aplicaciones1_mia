@@ -234,7 +234,7 @@ def _prepare_records(raw: pd.DataFrame) -> pd.DataFrame:
     records["anio"] = records["fecha"].dt.year.astype("int16")
     records["mes"] = records["fecha"].dt.month.astype("int16")
     records["grupo_edad_label"] = records["grupo_edad"].map(GRUPO_EDAD_LABELS).fillna("Sin clasificación")
-    records["homicidio_x95"] = (records["causa_cod"] == "X95").astype("int8")
+    records["homicidio_x95"] = records["causa_cod"].str.startswith("X95", na=False).astype("int8")
     return records
 
 
@@ -337,6 +337,42 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
                 renamed = renamed.drop(columns=geo_column)
     except Exception:  # noqa: BLE001
         pass
+
+    csv_catalog = source.parent / "dane_municipios.csv"
+    if csv_catalog.exists():
+        try:
+            coords = pd.read_csv(csv_catalog, dtype=str, encoding="utf-8")
+            coords = coords.rename(
+                columns={
+                    "COD_DPTO": "depto_cod",
+                    "NOM_DPTO": "depto",
+                    "COD_MPIO": "muni_cod",
+                    "NOM_MPIO": "municipio",
+                    "LATITUD": "lat",
+                    "LONGITUD": "lon",
+                }
+            )
+            coords["depto_cod"] = coords["depto_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            coords["depto_cod"] = coords["depto_cod"].str.zfill(2)
+            coords["muni_cod"] = coords["muni_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            coords["muni_cod"] = coords["muni_cod"].str.zfill(5)
+            coords["depto"] = coords["depto"].astype("string").str.strip().str.title()
+            coords["municipio"] = coords["municipio"].astype("string").str.strip().str.title()
+            coords["lat"] = pd.to_numeric(coords["lat"], errors="coerce")
+            coords["lon"] = pd.to_numeric(coords["lon"], errors="coerce")
+            renamed = renamed.merge(
+                coords[["depto_cod", "muni_cod", "depto", "municipio", "lat", "lon"]],
+                on=["depto_cod", "muni_cod"],
+                how="left",
+                suffixes=("", "_catalog"),
+            )
+            for column in ["depto", "municipio", "lat", "lon"]:
+                catalog_column = f"{column}_catalog"
+                if catalog_column in renamed.columns:
+                    renamed[column] = renamed[column].fillna(renamed[catalog_column])
+                    renamed = renamed.drop(columns=catalog_column)
+        except Exception:  # noqa: BLE001
+            LOGGER.exception("No fue posible enriquecer coordenadas desde %s", csv_catalog)
 
     renamed["depto_cod"] = _normalize_code(renamed["depto_cod"], width=2)
     renamed["muni_cod"] = _normalize_code(renamed["muni_cod"], width=5)
