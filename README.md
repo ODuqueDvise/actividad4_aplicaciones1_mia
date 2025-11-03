@@ -53,8 +53,7 @@ Analizar patrones de mortalidad por territorio, causa y grupo poblacional a part
 ## Instalación
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/<usuario>/mortalidad-colombia-2019.git
-   cd mortalidad-colombia-2019
+   https://github.com/ODuqueDvise/actividad4_aplicaciones1_mia.git
    ```
 2. **Configurar variables**
    ```bash
