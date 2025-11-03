@@ -69,12 +69,32 @@ validate: dev-install
 	@echo ">> Validando dataset procesado"
 	@PYTHONPATH="$(PROJECT_ROOT)/src" "$(PYTHON)" -m mortalidad.cli validate
 
-format: dev-install
+format: venv
+	@if [ ! -d "$(VENV_BIN)" ]; then \
+		echo ">> Entorno virtual ausente; ejecuta 'make venv' o 'make dev-install' primero"; \
+		exit 1; \
+	fi
+	@if ! "$(PYTHON)" -m isort --version >/dev/null 2>&1; then \
+		echo ">> isort no está instalado en el entorno virtual; ejecuta 'make dev-install' con acceso a red"; \
+		exit 1; \
+	fi
+	@if ! "$(PYTHON)" -m black --version >/dev/null 2>&1; then \
+		echo ">> black no está instalado en el entorno virtual; ejecuta 'make dev-install' con acceso a red"; \
+		exit 1; \
+	fi
 	@echo ">> Formateando con isort y black"
 	@"$(PYTHON)" -m isort src tests
 	@"$(PYTHON)" -m black src tests
 
-lint: dev-install
+lint: venv
+	@if [ ! -d "$(VENV_BIN)" ]; then \
+		echo ">> Entorno virtual ausente; ejecuta 'make venv' o 'make dev-install' primero"; \
+		exit 1; \
+	fi
+	@if ! "$(PYTHON)" -m ruff --version >/dev/null 2>&1; then \
+		echo ">> Ruff no está instalado en el entorno virtual; ejecuta 'make dev-install' con acceso a red"; \
+		exit 1; \
+	fi
 	@echo ">> Ejecutando Ruff"
 	@"$(PYTHON)" -m ruff check src tests
 

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dash import Dash, dcc, html
 
-from .components import bars, hist, lines, pie, stacked, table
+from .components import bars, hist, lines
 from .components import map as map_component
+from .components import pie, stacked, table
 
 
 def build_layout(_: Dash) -> html.Div:
@@ -37,40 +38,11 @@ def build_layout(_: Dash) -> html.Div:
                                 className="header-meta",
                                 children=[
                                     html.Span(
-                                        "Fuente oficial: Estadísticas Vitales 2019 (DANE)"
+                                        "Fuente: Estadísticas Vitales 2019 (DANE)"
                                     ),
-                                    html.Span(
-                                        "Proyecto académico | Maestría IA 2025"
-                                    ),
+                                    html.Span("Proyecto académico | Maestría IA 2025"),
                                     html.Span("Aplicaciones 1 | Orlando Duque"),
                                 ],
-                            ),
-                        ],
-                    ),
-                    html.Div(
-                        className="header-controls",
-                        children=[
-                            html.Span(
-                                "2019",
-                                className="badge badge-year",
-                                role="status",
-                                **{"aria-live": "polite"},
-                            ),
-                            dcc.Dropdown(
-                                id="filter-global-scope",
-                                className="global-select",
-                                options=[
-                                    {
-                                        "label": "Cobertura nacional",
-                                        "value": "nacional",
-                                    },
-                                    {"label": "Comparar regiones", "value": "regional"},
-                                ],
-                                value="nacional",
-                                clearable=False,
-                                persistence=True,
-                                persistence_type="session",
-                                searchable=True,
                             ),
                         ],
                     ),

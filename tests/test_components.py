@@ -7,8 +7,9 @@ import plotly.graph_objects as go
 import pytest
 from dash import dash_table
 
-from mortalidad.components import bars, hist, lines, pie, stacked, table
+from mortalidad.components import bars, hist, lines
 from mortalidad.components import map as map_component
+from mortalidad.components import pie, stacked, table
 from mortalidad.data_loader import GRUPO_EDAD_LABELS
 
 

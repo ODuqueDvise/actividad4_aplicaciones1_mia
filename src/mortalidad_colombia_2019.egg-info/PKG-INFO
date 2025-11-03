@@ -27,80 +27,124 @@ Requires-Dist: types-python-dateutil; extra == "dev"
 
 # Mortalidad Colombia 2019
 
-Aplicación Dash para explorar estadísticas de mortalidad en Colombia durante 2019. El proyecto sigue prácticas de ingeniería de plataforma con tipado estricto, automatización y despliegue reproducible.
+## Introducción del proyecto
+Aplicación web desarrollada con Dash para explorar de forma interactiva las estadísticas de mortalidad en Colombia durante 2019. El dashboard prioriza la accesibilidad (roles ARIA, estados `:focus-visible`, indicadores de carga) y el rendimiento mediante cacheo en memoria y exportaciones diferidas a CSV.
 
-## Requisitos
-
-- Python 3.11+
-- Make (GNU)
-- Docker (opcional para despliegue contenedorizado)
-
-## Cómo correr local
-
-1. Copia `.env.example` a `.env` y ajusta rutas o puertos según tu entorno.
-2. Coloca los archivos `NoFetal2019.xlsx`, `CodigosDeMuerte.xlsx` y `Divipola.xlsx` dentro de `data/raw/` (el repositorio ignora esta carpeta por defecto).
-3. Ejecuta `make dev-install` para crear el entorno virtual, instalar dependencias y registrar la biblioteca como editable.
-4. Inicia la aplicación con `make run` o `python -m mortalidad.app`. La interfaz estará disponible en `http://localhost:8050`.
-
-## Cómo testear
-
-- Ejecuta `make lint` para revisar estilo con Ruff.
-- Corre `make typecheck` para validar tipado estático con MyPy.
-- Lanza `make test` para correr pytest y generar el reporte de cobertura configurado.
-- Si necesitas cobertura detallada, puedes repetir `pytest --cov=src --cov-report=term-missing`.
-
-## Calidad de código
-
-- `make format` aplica `isort` y `black` siguiendo la configuración en `pyproject.toml`.
-- `make lint`, `make typecheck` y `make test` deben pasar antes de subir cambios.
-- Registra los hooks ejecutando `make pre-commit`; esto habilita `ruff`, `black`, `isort`, `detect-secrets` y utilidades básicas antes de cada commit.
-
-## CLI
-
-- `python -m mortalidad.cli ingest` procesa los archivos XLSX y genera `data/processed/mortalidad_2019.parquet`.
-- `python -m mortalidad.cli validate` ejecuta la validación con Pandera sobre el parquet procesado.
-- `python -m mortalidad.cli serve --host 0.0.0.0 --port 8050` levanta la aplicación Dash usando la configuración actual.
-
-## Accesibilidad y rendimiento
-
-- Las gráficas se envuelven en `dcc.Loading` para diferir la renderización y mostrar progreso.
-- Los filtros conservan caché (configurable vía `CACHE_TIMEOUT`) y el rango de meses se actualiza al soltar el control, reduciendo callbacks consecutivos.
-- Cada tarjeta tiene un botón “Exportar CSV” que descarga la vista actual mediante `dcc.Download`.
-- El layout usa roles y atributos `aria-*`, botones con alto contraste y estilos `:focus-visible` para navegación asistiva.
-
-## Integración con PyCharm
-
-- Importa el repositorio y selecciona el intérprete virtual (`.venv`) creado con `make dev-install`.
-- Desde el menú **Run > Edit Configurations…**, usa la opción **Import from .run** para cargar:
-  - `Dash Server` (ejecuta el servidor en modo debug con variables de entorno).
-  - `PyTests` (lanza la suite de pytest con cobertura y warnings mínimos).
-  - `CLI Ingest` (corre el comando `python -m mortalidad.cli ingest`).
-- Ajusta las variables `DATA_DIR`, `ENV` o `PORT` desde el propio diálogo si tu entorno difiere de los valores por defecto del proyecto.
-- El depurador de PyCharm puede engancharse a cualquiera de las configuraciones anteriores presionando el icono de bug junto a cada run configuration.
+## Objetivo
+Analizar patrones de mortalidad por territorio, causa y grupo poblacional a partir de las bases públicas del DANE, facilitando la identificación de focos de violencia, estacionalidad y diferencias por sexo o edad.
 
 ## Estructura del proyecto
-
 ```
+├── assets/
+│   ├── screenshots/              # Capturas utilizadas en este README
+│   └── style.css                 # Estilos personalizados del dashboard
 ├── data/
-│   ├── processed/
-│   └── raw/
-├── src/
-│   └── mortalidad/
-├── tests/
-└── assets/
+│   ├── processed/                # Caché parquet generado por la ingesta
+│   └── raw/                      # Coloque aquí los archivos Excel originales
+├── scripts/                      # Utilidades para tareas de soporte
+├── src/mortalidad/               # Código fuente de la aplicación y CLI
+├── tests/                        # Suite de pruebas con pytest y fixtures sintéticos
+├── Makefile                      # Automatización de tareas locales
+├── docker-compose.yml            # Orquestación de servicios para desarrollo
+├── render.yaml                   # Blueprint de despliegue en Render
+└── pyproject.toml                # Configuración de dependencias y linters
 ```
 
-Documenta transformaciones de datos adicionales en `data/README.md` y conserva los scripts utilitarios en `src/mortalidad/utils/`.
+## Requisitos
+- Python 3.11 o superior (probado con 3.13)
+- Make (GNU)
+- Virtualenv o similar (se crea automáticamente con `make dev-install`)
+- Docker (opcional, para ejecución contenedorizada)
+- Acceso a los archivos del DANE:
+  - `NoFetal2019.xlsx`
+  - `CodigosDeMuerte.xlsx`
+  - `Divipola.xlsx`
 
-## Despliegue continuo en Render
+## Despliegue en Render
+1. Ejecuta `make ingest` y `make validate` en local para generar `data/processed/mortalidad_2019.parquet` y verificar la integridad.
+2. Publica el repositorio en GitHub/GitLab. Render detectará el blueprint definido en `render.yaml`.
+3. En Render selecciona **New → Blueprint**, elige el repositorio y confirma el servicio web sugerido.
+4. Configura las variables de entorno: `ENV=production`, `MAPBOX_TOKEN=pk.xxx`, `DATA_DIR=data/raw`, `CACHE_TIMEOUT=300`.
+5. Mantén `autoDeploy: true` para reconstruir ante cada push a `main`. El build ya ejecuta `python -m mortalidad.cli ingest --force` para regenerar el parquet antes de servir el dashboard.
+6. Revisa la URL asignada y valida filtros principales; consulta los logs de Render ante cualquier fallo.
 
-1. **Preparación de dataset**: Ejecuta `make ingest` localmente para refrescar `data/processed/mortalidad_2019.parquet`. Valida el resultado con `make validate` y asegurate de commitear los artefactos generados.
-2. **Repositorio Git**: Publica el proyecto en GitHub/GitLab. El archivo `render.yaml` en la raíz describe la infraestructura; Render lo detectará automáticamente.
-3. **Crear servicio**:
-   - En Render ve a *New → Blueprint* y selecciona este repositorio.
-   - Confirma el servicio web `mortalidad-colombia-2019` (plan `free`). El blueprint ya instala dependencias y ejecuta `python -m mortalidad.cli ingest --force` durante el build, por lo que el parquet se recrea en cada despliegue.
-   - Define las variables de entorno necesarias (`ENV=production`, `MAPBOX_TOKEN=pk.xxx`, `DATA_DIR=data/raw`, `CACHE_TIMEOUT=300`) en la pestaña *Environment*.
-4. **Autodeploy**: Mantén habilitado `autoDeploy: true` (ya viene configurado) para que cada push a `main` dispare un nuevo build.
-5. **Verificación**: Tras el despliegue visita la URL asignada por Render y prueba los filtros principales. Consulta los logs en Render si algo falla.
+## Software
+- Python, Dash y Plotly para la capa interactiva.
+- Pandas y Pandera para ingesta, transformación y validación de datos.
+- Flask-Caching para cacheo en memoria.
+- Ruff, Black e isort para formato y linting.
+- MyPy para tipado estático.
+- Pytest y Coverage para pruebas automatizadas.
+- Docker y docker-compose para paridad de entornos.
 
-Sugerencia: agrega un workflow de CI que ejecute `make ingest && make validate` y pruebas antes de fusionar cambios a `main` para mantener el pipeline limpio.
+## Instalación
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/<usuario>/mortalidad-colombia-2019.git
+   cd mortalidad-colombia-2019
+   ```
+2. **Configurar variables**
+   ```bash
+   cp .env.example .env
+   # Ajusta DATA_DIR, PORT, MAPBOX_TOKEN si aplica
+   ```
+3. **Añadir datos de entrada**
+   Copia los tres archivos Excel del DANE dentro de `data/raw/`. El repositorio ignora esta carpeta, por lo que no se versionan los datos sensibles.
+4. **Crear entorno y dependencias**
+   ```bash
+   make dev-install
+   ```
+5. **Ejecutar la aplicación**
+   ```bash
+   make run
+   # o
+   python -m mortalidad.app
+   ```
+   La aplicación quedará disponible en `http://localhost:8050`.
+6. **Comandos útiles**
+   - `make lint`, `make typecheck`, `make test`: linting, mypy y pruebas.
+   - `make format`: aplica Black + isort.
+   - `python -m mortalidad.cli ingest [--force]`: procesa los Excel y genera el parquet.
+   - `python -m mortalidad.cli validate`: valida el esquema con Pandera.
+   - `python -m mortalidad.cli serve --host 0.0.0.0 --port 8050`: levanta el servidor Dash desde la CLI.
+7. **Hooks de pre-commit**
+   Ejecuta `make pre-commit` para instalar los hooks que ejecutan Ruff, Black, isort y detect-secrets antes de cada commit.
+8. **Configuración opcional en PyCharm**
+   Importa el repositorio y selecciona el intérprete `.venv`. Usa **Run → Edit Configurations… → Import from .run** para cargar las ejecuciones predefinidas (`Dash Server`, `PyTests`, `CLI Ingest`).
+
+## Visualizaciones con explicaciones de los resultados
+
+### Mapa coroplético por departamento
+![mapa_departamental.png](./assets/screenshots/mapa_departamental.png)
+Resalta los departamentos con mayor concentración. El uso de medias geográficas permite ubicar el centroide aproximado de cada territorio y los datos se actualizan según los filtros seleccionados.
+
+### Serie temporal mensual
+![serie_mensual.png](./assets/screenshots/serie_mensual.png)
+La gráfica de líneas muestra la evolución mensual de los fallecimientos.
+
+### Ranking de municipios con mayor incidencia
+![top_homicidios.png](./assets/screenshots/top_homicidios.png)
+El gráfico de barras compara los municipios con más casos etiquetados como `X95`. Permite identificar rápidamente los focos urbanos principales; el botón de exportación genera un CSV para análisis posterior.
+
+### Principales causas de muerte
+![tabla_causas.png](./assets/screenshots/tabla_causas.png)
+La tabla resume las causas más frecuentes reportadas en el periodo. Además de los códigos CIE-10 se muestra la descripción y el número de casos, lo que facilita detectar si los homicidios predominan frente a otras categorías.
+
+### Distribución por grupo de edad
+![distribucion_edad.png](./assets/screenshots/distribucion_edad.png)
+El histograma agrupa la mortalidad por rangos etarios del DANE.
+
+### Muertes por sexo y departamento
+![sexo_departamento.png](assets/screenshots/sexo_departamento.png)
+El diagrama de barras apiladas compara la mortalidad entre hombres y mujeres por departamento. Las categorías están ordenadas para resaltar las brechas de género, permitiendo focalizar políticas diferenciales.
+
+
+## Resumen de hallazgos
+
+El análisis de mortalidad en Colombia durante 2019 revela patrones importantes tanto en salud pública como en violencia social.
+Las principales causas de muerte corresponden a agresiones con armas de fuego y enfermedades respiratorias, reflejando problemas de seguridad y atención médica.
+En la distribución por sexo y departamento, los hombres presentan tasas de mortalidad significativamente mayores, concentradas en departamentos como Antioquia, Atlántico, Bogotá D.C. y Valle del Cauca.
+El análisis de homicidios (X95) muestra que Santiago de Cali, Medellín y Bogotá D.C. lideran los casos, confirmando la persistencia de violencia urbana.
+Por grupo de edad, los extremos de la vida concentran la mayor mortalidad: recién nacidos por causas infecciosas y adultos mayores por enfermedades crónicas.
+En la evolución mensual, se evidencian aumentos en marzo, julio y diciembre, posiblemente vinculados a variaciones estacionales o factores sociales.
+Finalmente, la distribución geográfica muestra una fuerte concentración en la región Andina, mientras que las zonas amazónicas y de la Orinoquía registran niveles menores, acordes con su densidad poblacional.

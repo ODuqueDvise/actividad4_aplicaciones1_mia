@@ -56,7 +56,7 @@ target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "N", "ANN", "DTZ", "PIE"]
+select = ["E", "F", "W", "B", "UP", "N", "ANN", "DTZ", "PIE"]
 ignore = ["ANN101", "ANN102"]
 fixable = ["ALL"]
 

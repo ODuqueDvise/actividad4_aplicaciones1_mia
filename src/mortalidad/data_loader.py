@@ -12,13 +12,13 @@ import numpy as np
 import pandas as pd
 
 if getattr(np, "string_", None) is None:
-    setattr(np, "string_", np.bytes_)
+    np.string_ = np.bytes_
 
 if getattr(np, "float_", None) is None:
-    setattr(np, "float_", np.float64)
+    np.float_ = np.float64
 
 if getattr(np, "int_", None) is None:
-    setattr(np, "int_", np.int64)
+    np.int_ = np.int64
 
 import pandera as pa
 from pandera import Check, Column, DataFrameSchema

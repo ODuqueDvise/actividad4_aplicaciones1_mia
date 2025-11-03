@@ -11,8 +11,9 @@ from dash import Dash, Input, Output, State, dcc
 from dash.exceptions import PreventUpdate
 from flask_caching import SimpleCache  # type: ignore[attr-defined]
 
-from .components import bars, hist, lines, pie, stacked, table
+from .components import bars, hist, lines
 from .components import map as map_component
+from .components import pie, stacked, table
 from .config import get_settings
 from .data_loader import GRUPO_EDAD_LABELS, load_data
 
@@ -22,9 +23,9 @@ LOGGER = logging.getLogger(__name__)
 class CacheProtocol(Protocol):
     """Subset of cache methods used by the callbacks."""
 
-    def get(self, key: str, default: Any | None = None) -> Any: ...
+    def get(self, key: str, default: object | None = None) -> object: ...
 
-    def set(self, key: str, value: Any, timeout: int | None = None) -> bool: ...
+    def set(self, key: str, value: object, timeout: int | None = None) -> bool: ...
 
 
 CallbackFunc = TypeVar("CallbackFunc", bound=Callable[..., Any])
@@ -244,16 +245,16 @@ def register_callbacks(app: Dash) -> None:
     LOGGER.debug("Registering callbacks for %s", app)
 
     def callback(
-        *args: Any, **kwargs: Any
+        *args: object, **kwargs: object
     ) -> Callable[[CallbackFunc], CallbackFunc]:
         decorator = app.callback(*args, **kwargs)
         return cast(Callable[[CallbackFunc], CallbackFunc], decorator)
 
     @callback(
         Output("filter-department", "options"),
-        Input("filter-global-scope", "value"),
+        Input("app-title", "children"),
     )
-    def populate_department_options(global_scope: str | None) -> list[dict[str, str]]:
+    def populate_department_options(_: str) -> list[dict[str, str]]:
         dataframe = _get_base_dataframe()
         return _build_department_options(dataframe)
 
@@ -290,7 +291,6 @@ def register_callbacks(app: Dash) -> None:
         Input("filter-sex", "value"),
         Input("filter-homicide", "value"),
         Input("filter-months", "value"),
-        Input("filter-global-scope", "value"),
     )
     def update_visualizations(
         department_value: str | None,
@@ -298,9 +298,7 @@ def register_callbacks(app: Dash) -> None:
         sex_value: str | None,
         homicide_values: Iterable[str] | None,
         month_values: Iterable[int] | None,
-        scope_value: str | None,
     ) -> tuple[Any, Any, Any, Any, Any, Any, Any, str]:
-        del scope_value
         filtered = get_filters_state(
             department_value,
             municipality_value,
