@@ -1,3 +1,13 @@
+.copilot/
+.cursor/
+.idea/**/copilot*
+**/*copilot*
+**/*github-copilot*
+*.copilot
+.claude/
+.claudecode/
+.aider*
+.cursor-tutor
 
 agents.nmd
 agents.md

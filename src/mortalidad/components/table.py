@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pandas as pd
 from dash import dash_table, html
 
 
-def top_causes_records(data: pd.DataFrame, *, limit: int = 10) -> list[dict[str, object]]:
+def top_causes_records(
+    data: pd.DataFrame, *, limit: int = 10
+) -> list[dict[str, object]]:
     """Return the top mortality causes sorted by frequency."""
     if data.empty:
         return []
@@ -16,7 +20,7 @@ def top_causes_records(data: pd.DataFrame, *, limit: int = 10) -> list[dict[str,
         .sort_values("total", ascending=False)
         .head(limit)
     )
-    return aggregated.to_dict("records")
+    return cast(list[dict[str, object]], aggregated.to_dict("records"))
 
 
 def build_top_causes_table(
@@ -31,7 +35,12 @@ def build_top_causes_table(
         columns=[
             {"name": "Código", "id": "causa_cod"},
             {"name": "Causa", "id": "causa"},
-            {"name": "Total", "id": "total", "type": "numeric", "format": {"specifier": ",d"}},
+            {
+                "name": "Total",
+                "id": "total",
+                "type": "numeric",
+                "format": {"specifier": ",d"},
+            },
         ],
         data=records,
         page_size=limit,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, cast
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -15,7 +15,7 @@ from ..config import get_settings
 SETTINGS = get_settings()
 
 
-def _normalize_code(value: Any, width: int) -> str:
+def _normalize_code(value: object, width: int) -> str:
     text = "" if value is None else str(value).strip()
     digits = "".join(char for char in text if char.isdigit())
     return digits.zfill(width)
@@ -48,8 +48,12 @@ def _reference_coordinates() -> pd.DataFrame:
             "LONGITUD": "lon",
         }
     )
-    coords["depto_cod"] = coords["depto_cod"].map(lambda value: _normalize_code(value, width=2))
-    coords["muni_cod"] = coords["muni_cod"].map(lambda value: _normalize_code(value, width=5))
+    coords["depto_cod"] = coords["depto_cod"].map(
+        lambda value: _normalize_code(value, width=2)
+    )
+    coords["muni_cod"] = coords["muni_cod"].map(
+        lambda value: _normalize_code(value, width=5)
+    )
     coords["depto"] = coords["depto"].astype("string").str.strip().str.title()
     coords["municipio"] = coords["municipio"].astype("string").str.strip().str.title()
     coords["lat"] = pd.to_numeric(coords["lat"], errors="coerce")
@@ -74,12 +78,14 @@ def _fill_missing_coordinates(data: pd.DataFrame) -> pd.DataFrame:
             )
             dataset["lat"] = dataset["lat"].fillna(dataset["lat_ref"])
             dataset["lon"] = dataset["lon"].fillna(dataset["lon_ref"])
-            dataset = dataset.drop(columns=[col for col in dataset.columns if col.endswith("_ref")])
+            dataset = dataset.drop(
+                columns=[col for col in dataset.columns if col.endswith("_ref")]
+            )
 
     return dataset
 
 
-def _compute_bounds(data: pd.DataFrame) -> Tuple[float, float, float, float]:
+def _compute_bounds(data: pd.DataFrame) -> tuple[float, float, float, float]:
     """Return latitude and longitude bounds with a safety margin."""
     lat_min = float(data["lat"].min())
     lat_max = float(data["lat"].max())
@@ -95,7 +101,9 @@ def _compute_bounds(data: pd.DataFrame) -> Tuple[float, float, float, float]:
     )
 
 
-def _marker_sizes(totals: pd.Series, *, min_size: float = 8.0, max_size: float = 28.0) -> list[float]:
+def _marker_sizes(
+    totals: pd.Series, *, min_size: float = 8.0, max_size: float = 28.0
+) -> list[float]:
     """Scale bubble sizes proportionally to the totals."""
     if totals.empty:
         return []
@@ -108,10 +116,12 @@ def _marker_sizes(totals: pd.Series, *, min_size: float = 8.0, max_size: float =
         return [midpoint] * len(totals)
     normalized = (totals - min_total) / (max_total - min_total)
     scaled = min_size + normalized * (max_size - min_size)
-    return scaled.tolist()
+    return cast(list[float], scaled.tolist())
 
 
-def _estimate_zoom(lat_min: float, lat_max: float, lon_min: float, lon_max: float) -> float:
+def _estimate_zoom(
+    lat_min: float, lat_max: float, lon_min: float, lon_max: float
+) -> float:
     """Estimate a zoom level that keeps Colombia in view."""
     lat_span = max(lat_max - lat_min, 1.0)
     lon_span = max(lon_max - lon_min, 1.0)
@@ -136,7 +146,11 @@ def _aggregate_by_department(data: pd.DataFrame) -> pd.DataFrame:
 def _aggregate_by_municipality(data: pd.DataFrame) -> pd.DataFrame:
     """Aggregate records by municipality to provide more granular markers."""
     return (
-        data.groupby(["depto_cod", "depto", "muni_cod", "municipio"], dropna=False, as_index=False)
+        data.groupby(
+            ["depto_cod", "depto", "muni_cod", "municipio"],
+            dropna=False,
+            as_index=False,
+        )
         .agg(
             total=("causa_cod", "size"),
             lat=("lat", "mean"),
@@ -149,7 +163,7 @@ def _aggregate_by_municipality(data: pd.DataFrame) -> pd.DataFrame:
 def build_choropleth_figure(
     data: pd.DataFrame,
     *,
-    geojson: Dict[str, Any] | None = None,
+    geojson: dict[str, Any] | None = None,
     title: str = "Mapa coroplético por departamento",
 ) -> go.Figure:
     """Return a choropleth or scattergeo map describing mortality by department."""
@@ -174,7 +188,15 @@ def build_choropleth_figure(
 
     dataset = _fill_missing_coordinates(data)
 
-    required = {"depto_cod", "depto", "muni_cod", "municipio", "lat", "lon", "causa_cod"}
+    required = {
+        "depto_cod",
+        "depto",
+        "muni_cod",
+        "municipio",
+        "lat",
+        "lon",
+        "causa_cod",
+    }
     if not required.issubset(dataset.columns):
         fig = go.Figure()
         fig.update_layout(
@@ -224,7 +246,9 @@ def build_choropleth_figure(
         )
         return fig
 
-    reference_for_bounds = muni_aggregated if not muni_aggregated.empty else dept_aggregated
+    reference_for_bounds = (
+        muni_aggregated if not muni_aggregated.empty else dept_aggregated
+    )
     lat_min, lat_max, lon_min, lon_max = _compute_bounds(reference_for_bounds)
     center_lat = float(reference_for_bounds["lat"].mean())
     center_lon = float(reference_for_bounds["lon"].mean())
@@ -261,7 +285,9 @@ def build_choropleth_figure(
 
     if not muni_aggregated.empty:
         size_min, size_max = (10, 28) if show_department_layer else (8, 26)
-        marker_sizes = _marker_sizes(muni_aggregated["total"], min_size=size_min, max_size=size_max)
+        marker_sizes = _marker_sizes(
+            muni_aggregated["total"], min_size=size_min, max_size=size_max
+        )
         hover_text = [
             f"{row.municipio} ({row.depto})<br>Total: {row.total:,} muertes"
             for row in muni_aggregated.itertuples()
@@ -326,7 +352,7 @@ def build_choropleth_figure(
 def render(
     data: pd.DataFrame | None = None,
     *,
-    geojson: Dict[str, Any] | None = None,
+    geojson: dict[str, Any] | None = None,
     title: str | None = None,
 ) -> html.Div:
     """Render the choropleth card using the provided dataset."""

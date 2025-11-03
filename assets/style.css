@@ -77,6 +77,18 @@ body {
   font-size: clamp(1.05rem, 1.3vw + 0.75rem, 1.3rem);
 }
 
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.header-meta span {
+  white-space: nowrap;
+}
+
 .header-controls {
   display: flex;
   align-items: center;
@@ -261,21 +273,6 @@ body {
 
 .loading-wrapper .dash-spinner {
   color: var(--color-primary);
-}
-
-.app-footer {
-  background-color: #0a2035;
-  color: rgba(255, 255, 255, 0.88);
-  padding: var(--space-md) clamp(1rem, 4vw, 2.5rem);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  justify-content: center;
-  font-size: 0.95rem;
-}
-
-.app-footer span {
-  white-space: nowrap;
 }
 
 .dash-dropdown > div,

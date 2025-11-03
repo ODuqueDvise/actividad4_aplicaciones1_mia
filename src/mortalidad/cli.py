@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import click
 import pandas as pd
@@ -51,7 +50,7 @@ def validate() -> None:
 @click.option("--host", default="0.0.0.0", show_default=True)
 @click.option("--port", type=int, default=None, help="Puerto HTTP para servir la app.")
 @click.option("--debug/--no-debug", default=None, help="Activa modo depuración.")
-def serve(host: str, port: Optional[int], debug: Optional[bool]) -> None:
+def serve(host: str, port: int | None, debug: bool | None) -> None:
     """Launch the Dash development server."""
     settings = get_settings()
     run_port = port or settings.port

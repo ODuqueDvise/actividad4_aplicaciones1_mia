@@ -50,7 +50,9 @@ def build_lowest_mortality_pie(
     )
     figure.update_traces(
         textinfo="label+percent",
-        hovertemplate="%{label}<br>Total: %{value:,} muertes (%{percent})<extra></extra>",
+        hovertemplate=(
+            "%{label}<br>Total: %{value:,} muertes (%{percent})<extra></extra>"
+        ),
     )
     figure.update_layout(
         template="plotly_white",

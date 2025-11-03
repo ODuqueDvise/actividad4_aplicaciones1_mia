@@ -19,7 +19,7 @@ ifeq ($(PYTHON_BIN),)
 $(error No se encontró un intérprete de Python 3.12+; instala Python 3.12 (recomendado) o ajusta PYTHON_CANDIDATES)
 endif
 
-.PHONY: venv dev-install run clean-venv doctor ingest validate
+.PHONY: venv dev-install run clean-venv doctor ingest validate format lint typecheck test pre-commit
 
 venv:
 	@if [ ! -d "$(VENV)" ]; then \
@@ -68,6 +68,27 @@ validate: dev-install
 	fi
 	@echo ">> Validando dataset procesado"
 	@PYTHONPATH="$(PROJECT_ROOT)/src" "$(PYTHON)" -m mortalidad.cli validate
+
+format: dev-install
+	@echo ">> Formateando con isort y black"
+	@"$(PYTHON)" -m isort src tests
+	@"$(PYTHON)" -m black src tests
+
+lint: dev-install
+	@echo ">> Ejecutando Ruff"
+	@"$(PYTHON)" -m ruff check src tests
+
+typecheck: dev-install
+	@echo ">> Ejecutando mypy"
+	@"$(PYTHON)" -m mypy src
+
+test: dev-install
+	@echo ">> Ejecutando pytest"
+	@"$(PYTHON)" -m pytest
+
+pre-commit: dev-install
+	@echo ">> Instalando hooks de pre-commit"
+	@"$(PYTHON)" -m pre_commit install
 
 clean-venv:
 	@if [ -d "$(VENV)" ]; then \

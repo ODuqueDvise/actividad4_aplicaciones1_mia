@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-if not hasattr(np, "string_"):
-    np.string_ = np.bytes_  # type: ignore[attr-defined]
+if getattr(np, "string_", None) is None:
+    setattr(np, "string_", np.bytes_)
 
-if not hasattr(np, "float_"):
-    np.float_ = np.float64  # type: ignore[attr-defined]
+if getattr(np, "float_", None) is None:
+    setattr(np, "float_", np.float64)
 
-if not hasattr(np, "int_"):
-    np.int_ = np.int64  # type: ignore[attr-defined]
+if getattr(np, "int_", None) is None:
+    setattr(np, "int_", np.int64)
 
 import pandera as pa
 from pandera import Check, Column, DataFrameSchema
@@ -180,24 +180,39 @@ def get_parquet_engine() -> str:
 
 
 def _prepare_records(raw: pd.DataFrame) -> pd.DataFrame:
-    standard_columns = {"depto_cod", "muni_cod", "sexo", "grupo_edad", "fecha", "causa_cod"}
+    standard_columns = {
+        "depto_cod",
+        "muni_cod",
+        "sexo",
+        "grupo_edad",
+        "fecha",
+        "causa_cod",
+    }
     available = set(raw.columns)
 
     if {"FECHA_DEF", "FECHA_OCURR"} & available:
         missing_columns = set(RECORDS_COLUMN_MAP) - available
         if missing_columns:
-            raise ValueError(f"Columnas faltantes en registros principales: {missing_columns}")
+            raise ValueError(
+                f"Columnas faltantes en registros principales: {missing_columns}"
+            )
         records = raw.rename(columns=RECORDS_COLUMN_MAP)[
             ["depto_cod", "muni_cod", "sexo", "grupo_edad", "fecha", "causa_cod"]
         ].copy()
-        records["fecha"] = pd.to_datetime(records["fecha"], errors="raise").dt.tz_localize(None)
-    elif {"AÑO", "MES", "COD_DEPARTAMENTO", "COD_MUNICIPIO", "COD_MUERTE"}.issubset(available):
+        records["fecha"] = pd.to_datetime(
+            records["fecha"], errors="raise"
+        ).dt.tz_localize(None)
+    elif {"AÑO", "MES", "COD_DEPARTAMENTO", "COD_MUNICIPIO", "COD_MUERTE"}.issubset(
+        available
+    ):
         if "COD_DANE" in raw.columns:
             muni_codes = raw["COD_DANE"].astype("string").str.strip()
         else:
-            dept = raw["COD_DEPARTAMENTO"].astype("string").str.strip().str.zfill(2)
-            muni = raw["COD_MUNICIPIO"].astype("string").str.strip().str.zfill(3)
-            muni_codes = dept + muni
+            dept_part = (
+                raw["COD_DEPARTAMENTO"].astype("string").str.strip().str.zfill(2)
+            )
+            muni_part = raw["COD_MUNICIPIO"].astype("string").str.strip().str.zfill(3)
+            muni_codes = dept_part + muni_part
         records = pd.DataFrame(
             {
                 "depto_cod": raw["COD_DEPARTAMENTO"],
@@ -218,23 +233,33 @@ def _prepare_records(raw: pd.DataFrame) -> pd.DataFrame:
         records = records.dropna(subset=["fecha"])
     else:
         raise ValueError(
-            "Estructura de NoFetal2019.xlsx no soportada. Se requieren columnas FECHA_DEF/FECHA_OCURR o AÑO/MES."
+            "Estructura de NoFetal2019.xlsx no soportada. Se requieren columnas "
+            "FECHA_DEF/FECHA_OCURR o AÑO/MES."
         )
 
     if not standard_columns.issubset(records.columns):
-        raise ValueError("No se pudieron estandarizar las columnas necesarias del registro de defunciones.")
+        raise ValueError(
+            "No se pudieron estandarizar las columnas necesarias del "
+            "registro de defunciones."
+        )
 
     records["depto_cod"] = _normalize_code(records["depto_cod"], width=2)
     records["muni_cod"] = _normalize_code(records["muni_cod"], width=5)
     records["causa_cod"] = records["causa_cod"].astype("string").str.strip().str.upper()
     records["sexo"] = records["sexo"].apply(_normalize_sex)
-    records["grupo_edad"] = pd.to_numeric(records["grupo_edad"], errors="raise").astype("int16")
+    records["grupo_edad"] = pd.to_numeric(records["grupo_edad"], errors="raise").astype(
+        "int16"
+    )
 
     records["fecha"] = records["fecha"].dt.tz_localize(None)
     records["anio"] = records["fecha"].dt.year.astype("int16")
     records["mes"] = records["fecha"].dt.month.astype("int16")
-    records["grupo_edad_label"] = records["grupo_edad"].map(GRUPO_EDAD_LABELS).fillna("Sin clasificación")
-    records["homicidio_x95"] = records["causa_cod"].str.startswith("X95", na=False).astype("int8")
+    records["grupo_edad_label"] = (
+        records["grupo_edad"].map(GRUPO_EDAD_LABELS).fillna("Sin clasificación")
+    )
+    records["homicidio_x95"] = (
+        records["causa_cod"].str.startswith("X95", na=False).astype("int8")
+    )
     return records
 
 
@@ -252,16 +277,25 @@ def _prepare_causes(raw: pd.DataFrame) -> pd.DataFrame:
             code3 = str(row.get(code3_col, "")).strip()
             desc3 = str(row.get(desc3_col, "")).strip()
             if code3 and code3.lower() != "nan":
-                records.append({"causa_cod": code3.upper(), "causa": desc3 or "Sin descripción"})
+                records.append(
+                    {"causa_cod": code3.upper(), "causa": desc3 or "Sin descripción"}
+                )
 
             code4 = str(row.get(code4_col, "")).strip()
             desc4 = str(row.get(desc4_col, "")).strip()
             if code4 and code4.lower() != "nan":
-                records.append({"causa_cod": code4.upper(), "causa": desc4 or desc3 or "Sin descripción"})
+                records.append(
+                    {
+                        "causa_cod": code4.upper(),
+                        "causa": desc4 or desc3 or "Sin descripción",
+                    }
+                )
 
         causes = pd.DataFrame.from_records(records)
         if causes.empty:
-            raise ValueError("No se pudieron extraer códigos de la hoja de causas CIE-10.")
+            raise ValueError(
+                "No se pudieron extraer códigos de la hoja de causas CIE-10."
+            )
         causes = causes.drop_duplicates(subset="causa_cod")
         return causes
 
@@ -279,16 +313,24 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
     standard_columns = {"depto_cod", "depto", "muni_cod", "municipio", "lat", "lon"}
 
     if not standard_columns.issubset(columns):
-        alt_required = {"COD_DEPARTAMENTO", "COD_MUNICIPIO", "DEPARTAMENTO", "MUNICIPIO"}
+        alt_required = {
+            "COD_DEPARTAMENTO",
+            "COD_MUNICIPIO",
+            "DEPARTAMENTO",
+            "MUNICIPIO",
+        }
         if alt_required.issubset(columns):
             depto_cod = raw["COD_DEPARTAMENTO"].astype("string").str.strip()
             if "COD_DANE" in raw.columns:
                 muni_cod = raw["COD_DANE"].astype("string").str.strip()
             else:
-                muni_cod = (
+                dept_part = (
                     raw["COD_DEPARTAMENTO"].astype("string").str.strip().str.zfill(2)
-                    + raw["COD_MUNICIPIO"].astype("string").str.strip().str.zfill(3)
                 )
+                muni_part = (
+                    raw["COD_MUNICIPIO"].astype("string").str.strip().str.zfill(3)
+                )
+                muni_cod = dept_part + muni_part
 
             renamed = pd.DataFrame(
                 {
@@ -302,7 +344,9 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
             )
         else:
             missing_columns = set(DIVIPOLA_COLUMN_MAP) - columns
-            raise ValueError(f"Columnas faltantes en catálogo Divipola: {missing_columns}")
+            raise ValueError(
+                f"Columnas faltantes en catálogo Divipola: {missing_columns}"
+            )
     else:
         renamed = raw.rename(columns=DIVIPOLA_COLUMN_MAP)[
             ["depto_cod", "depto", "muni_cod", "municipio", "lat", "lon"]
@@ -327,9 +371,16 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
         geo["muni_cod"] = geo["muni_cod"].str.zfill(5)
         geo["municipio"] = geo["municipio"].astype("string").str.strip()
         geo["depto"] = geo["depto"].astype("string").str.strip()
-        geo["lon"] = pd.to_numeric(geo["lon"].astype("string").str.replace(",", "."), errors="coerce")
-        geo["lat"] = pd.to_numeric(geo["lat"].astype("string").str.replace(",", "."), errors="coerce")
-        renamed = renamed.merge(geo, on=["depto_cod", "muni_cod"], how="left", suffixes=("", "_geo"))
+        geo_lon = geo["lon"].astype("string").str.replace(",", ".")
+        geo_lat = geo["lat"].astype("string").str.replace(",", ".")
+        geo["lon"] = pd.to_numeric(geo_lon, errors="coerce")
+        geo["lat"] = pd.to_numeric(geo_lat, errors="coerce")
+        renamed = renamed.merge(
+            geo,
+            on=["depto_cod", "muni_cod"],
+            how="left",
+            suffixes=("", "_geo"),
+        )
         for column in ["depto", "municipio", "lat", "lon"]:
             geo_column = f"{column}_geo"
             if geo_column in renamed.columns:
@@ -352,12 +403,18 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
                     "LONGITUD": "lon",
                 }
             )
-            coords["depto_cod"] = coords["depto_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            coords["depto_cod"] = (
+                coords["depto_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            )
             coords["depto_cod"] = coords["depto_cod"].str.zfill(2)
-            coords["muni_cod"] = coords["muni_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            coords["muni_cod"] = (
+                coords["muni_cod"].astype("string").str.replace(r"\D", "", regex=True)
+            )
             coords["muni_cod"] = coords["muni_cod"].str.zfill(5)
             coords["depto"] = coords["depto"].astype("string").str.strip().str.title()
-            coords["municipio"] = coords["municipio"].astype("string").str.strip().str.title()
+            coords["municipio"] = (
+                coords["municipio"].astype("string").str.strip().str.title()
+            )
             coords["lat"] = pd.to_numeric(coords["lat"], errors="coerce")
             coords["lon"] = pd.to_numeric(coords["lon"], errors="coerce")
             renamed = renamed.merge(
@@ -372,7 +429,9 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
                     renamed[column] = renamed[column].fillna(renamed[catalog_column])
                     renamed = renamed.drop(columns=catalog_column)
         except Exception:  # noqa: BLE001
-            LOGGER.exception("No fue posible enriquecer coordenadas desde %s", csv_catalog)
+            LOGGER.exception(
+                "No fue posible enriquecer coordenadas desde %s", csv_catalog
+            )
 
     renamed["depto_cod"] = _normalize_code(renamed["depto_cod"], width=2)
     renamed["muni_cod"] = _normalize_code(renamed["muni_cod"], width=5)
@@ -383,7 +442,9 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
     return renamed.drop_duplicates(subset=["depto_cod", "muni_cod"])
 
 
-def _merge_datasets(records: pd.DataFrame, causes: pd.DataFrame, divipola: pd.DataFrame) -> pd.DataFrame:
+def _merge_datasets(
+    records: pd.DataFrame, causes: pd.DataFrame, divipola: pd.DataFrame
+) -> pd.DataFrame:
     merged = records.merge(causes, on="causa_cod", how="left")
     merged = merged.merge(
         divipola,
@@ -454,9 +515,11 @@ def load_data(force_refresh: bool = False) -> pd.DataFrame:
     divipola = _prepare_divipola(divipola_raw, divipola_path)
 
     dataset = _merge_datasets(records, causes, divipola)
-    dataset["depto"] = dataset["depto"].fillna("Sin información")
-    dataset["municipio"] = dataset["municipio"].fillna("Sin información")
-    dataset = dataset[dataset["grupo_edad"].isin(GRUPO_EDAD_LABELS)].reset_index(drop=True)
+    dataset["depto"] = dataset["depto"].fillna("Sin informacin")
+    dataset["municipio"] = dataset["municipio"].fillna("Sin informacin")
+    dataset = dataset[dataset["grupo_edad"].isin(GRUPO_EDAD_LABELS)].reset_index(
+        drop=True
+    )
 
     validated = MORTALITY_SCHEMA.validate(dataset, lazy=True)
 

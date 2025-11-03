@@ -7,7 +7,8 @@ import plotly.graph_objects as go
 import pytest
 from dash import dash_table
 
-from mortalidad.components import bars, hist, lines, map as map_component, pie, stacked, table
+from mortalidad.components import bars, hist, lines, pie, stacked, table
+from mortalidad.components import map as map_component
 from mortalidad.data_loader import GRUPO_EDAD_LABELS
 
 
@@ -59,7 +60,9 @@ def test_build_choropleth_returns_figure(sample_df: pd.DataFrame) -> None:
     assert trace_types & expected_types
 
 
-def test_map_renders_multiple_markers_for_single_department(sample_df: pd.DataFrame) -> None:
+def test_map_renders_multiple_markers_for_single_department(
+    sample_df: pd.DataFrame,
+) -> None:
     """When a single department is present, the map must display municipal markers."""
     bogota_df = sample_df[sample_df["depto_cod"] == "11"].copy()
     bogota_df.loc[1, "muni_cod"] = "11002"
@@ -112,7 +115,9 @@ def test_build_age_histogram_respects_order(sample_df: pd.DataFrame) -> None:
     figure = hist.build_age_histogram(sample_df)
     assert isinstance(figure, go.Figure)
     categories = list(figure.data[0].x)
-    expected_order = [label for label in GRUPO_EDAD_LABELS.values() if label in categories]
+    expected_order = [
+        label for label in GRUPO_EDAD_LABELS.values() if label in categories
+    ]
     assert categories == expected_order
 
 

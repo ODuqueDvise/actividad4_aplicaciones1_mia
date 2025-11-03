@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from logging import config as logging_config
-from typing import Any, Dict
+from typing import Any
 
 from dash import Dash
 
@@ -27,7 +27,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
-def _development_config() -> Dict[str, Any]:
+def _development_config() -> dict[str, Any]:
     """Return logging configuration for development environments."""
     return {
         "version": 1,
@@ -49,7 +49,7 @@ def _development_config() -> Dict[str, Any]:
     }
 
 
-def _production_config() -> Dict[str, Any]:
+def _production_config() -> dict[str, Any]:
     """Return logging configuration for production environments."""
     return {
         "version": 1,
@@ -82,11 +82,11 @@ def register_exception_handlers(app: Dash) -> None:
     """Attach exception handlers to the underlying Flask application."""
     server = app.server
 
-    @server.errorhandler(Exception)
+    @server.errorhandler(Exception)  # type: ignore[misc]
     def handle_exception(error: Exception) -> tuple[str, int]:
         logging.exception("Unhandled exception", exc_info=error)
         message = (
-            "<div style=\"padding:2rem;font-family:Inter,sans-serif;\">"
+            '<div style="padding:2rem;font-family:Inter,sans-serif;">'
             "<h1>Algo salió mal</h1>"
             "<p>Ocurrió un error inesperado. Intenta recargar la página o "
             "contáctanos si persiste.</p>"

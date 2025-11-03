@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 
@@ -27,7 +27,8 @@ def load_divipola(
     catalog_path = path or settings.data_dir / "Divipola.xlsx"
     if reader is None:
         raise NotImplementedError(
-            "Proporciona una función lectora (por ejemplo, pandas.read_excel) como argumento."
+            "Proporciona una función lectora (por ejemplo, "
+            "pandas.read_excel) como argumento."
         )
     return reader(catalog_path)
 

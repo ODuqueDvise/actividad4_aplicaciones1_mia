@@ -79,6 +79,14 @@ mypy_path = ["src"]
 module = ["dash", "dash.*", "plotly", "plotly.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*", "flask_caching", "flask_caching.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["mortalidad.callbacks"]
+disallow_untyped_defs = false
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --cov=src --cov-report=term-missing"

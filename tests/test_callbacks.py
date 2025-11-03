@@ -48,7 +48,9 @@ def sample_df() -> pd.DataFrame:
 
 
 @pytest.fixture(autouse=True)
-def patch_base_dataframe(monkeypatch: pytest.MonkeyPatch, sample_df: pd.DataFrame) -> None:
+def patch_base_dataframe(
+    monkeypatch: pytest.MonkeyPatch, sample_df: pd.DataFrame
+) -> None:
     """Patch data access to use the synthetic dataset."""
     callbacks._CACHE = type(callbacks._CACHE)(default_timeout=callbacks.CACHE_TIMEOUT)
     monkeypatch.setattr(callbacks, "_get_base_dataframe", lambda: sample_df.copy())

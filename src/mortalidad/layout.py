@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dash import Dash, dcc, html
 
-from .components import bars, hist, lines, map as map_component, pie, stacked, table
+from .components import bars, hist, lines, pie, stacked, table
+from .components import map as map_component
 
 
 def build_layout(_: Dash) -> html.Div:
@@ -25,9 +26,24 @@ def build_layout(_: Dash) -> html.Div:
                                 id="app-title",
                             ),
                             html.P(
-                                "Análisis interactivo de mortalidad por territorio y causa.",
+                                (
+                                    "Análisis interactivo de mortalidad por "
+                                    "territorio y causa."
+                                ),
                                 className="app-subtitle",
                                 id="app-subtitle",
+                            ),
+                            html.Div(
+                                className="header-meta",
+                                children=[
+                                    html.Span(
+                                        "Fuente oficial: Estadísticas Vitales 2019 (DANE)"
+                                    ),
+                                    html.Span(
+                                        "Proyecto académico | Maestría IA 2025"
+                                    ),
+                                    html.Span("Aplicaciones 1 | Orlando Duque"),
+                                ],
                             ),
                         ],
                     ),
@@ -44,7 +60,10 @@ def build_layout(_: Dash) -> html.Div:
                                 id="filter-global-scope",
                                 className="global-select",
                                 options=[
-                                    {"label": "Cobertura nacional", "value": "nacional"},
+                                    {
+                                        "label": "Cobertura nacional",
+                                        "value": "nacional",
+                                    },
                                     {"label": "Comparar regiones", "value": "regional"},
                                 ],
                                 value="nacional",
@@ -71,7 +90,10 @@ def build_layout(_: Dash) -> html.Div:
                                 children=[
                                     html.H2("Filtros", id="filtros-titulo"),
                                     html.P(
-                                        "Refina los indicadores para comparar territorios y causas.",
+                                        (
+                                            "Refina los indicadores para comparar "
+                                            "territorios y causas."
+                                        ),
                                         className="filters-description",
                                     ),
                                 ],
@@ -154,7 +176,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 id="filter-homicide",
                                                 options=[
                                                     {
-                                                        "label": "Mostrar solo homicidios con arma de fuego (X95)",
+                                                        "label": (
+                                                            "Mostrar solo homicidios "
+                                                            "con arma de fuego (X95)"
+                                                        ),
                                                         "value": "x95",
                                                     }
                                                 ],
@@ -179,7 +204,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 max=12,
                                                 step=1,
                                                 value=[1, 12],
-                                                marks={month: {"label": str(month)} for month in range(1, 13)},
+                                                marks={
+                                                    month: {"label": str(month)}
+                                                    for month in range(1, 13)
+                                                },
                                                 allowCross=False,
                                                 persistence=True,
                                                 persistence_type="session",
@@ -208,7 +236,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Mapa de mortalidad por departamento",
+                                                        (
+                                                            "Mapa de mortalidad por "
+                                                            "departamento"
+                                                        ),
                                                         id="viz-map-title",
                                                     ),
                                                     html.Button(
@@ -216,7 +247,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-map",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar datos del mapa"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar datos del "
+                                                                "mapa"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-map"),
                                                 ],
@@ -225,7 +261,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="loading-wrapper",
                                                 type="circle",
                                                 children=map_component.render(
-                                                    title="Mapa coroplético por departamento"
+                                                    title=(
+                                                        "Mapa coroplético por "
+                                                        "departamento"
+                                                    )
                                                 ),
                                             ),
                                         ],
@@ -239,7 +278,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Tendencia mensual de muertes",
+                                                        (
+                                                            "Tendencia mensual de "
+                                                            "muertes"
+                                                        ),
                                                         id="viz-line-title",
                                                     ),
                                                     html.Button(
@@ -247,7 +289,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-lines",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar serie mensual"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar serie "
+                                                                "mensual"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-lines"),
                                                 ],
@@ -255,7 +302,9 @@ def build_layout(_: Dash) -> html.Div:
                                             dcc.Loading(
                                                 className="loading-wrapper",
                                                 type="circle",
-                                                children=lines.render(title="Muertes por mes"),
+                                                children=lines.render(
+                                                    title="Muertes por mes",
+                                                ),
                                             ),
                                         ],
                                     ),
@@ -268,7 +317,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Top 5 ciudades con más homicidios (X95)",
+                                                        (
+                                                            "Top 5 ciudades con más "
+                                                            "homicidios (X95)"
+                                                        ),
                                                         id="viz-bars-title",
                                                     ),
                                                     html.Button(
@@ -276,7 +328,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-bars",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar ranking de homicidios"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar ranking de "
+                                                                "homicidios"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-bars"),
                                                 ],
@@ -285,7 +342,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="loading-wrapper",
                                                 type="circle",
                                                 children=bars.render(
-                                                    title="Top 5 ciudades con más homicidios (X95)"
+                                                    title=(
+                                                        "Top 5 ciudades con más "
+                                                        "homicidios (X95)"
+                                                    ),
                                                 ),
                                             ),
                                         ],
@@ -299,7 +359,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Ciudades con menor mortalidad (top 10)",
+                                                        (
+                                                            "Ciudades con menor "
+                                                            "mortalidad (top 10)"
+                                                        ),
                                                         id="viz-pie-title",
                                                     ),
                                                     html.Button(
@@ -307,7 +370,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-pie",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar ranking de menor mortalidad"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar ranking de "
+                                                                "menor mortalidad"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-pie"),
                                                 ],
@@ -316,7 +384,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="loading-wrapper",
                                                 type="circle",
                                                 children=pie.render(
-                                                    title="10 ciudades con menor mortalidad"
+                                                    title=(
+                                                        "10 ciudades con menor "
+                                                        "mortalidad"
+                                                    ),
                                                 ),
                                             ),
                                         ],
@@ -330,7 +401,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Principales causas de muerte",
+                                                        (
+                                                            "Principales causas de "
+                                                            "muerte"
+                                                        ),
                                                         id="viz-table-title",
                                                     ),
                                                     html.Button(
@@ -338,7 +412,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-table",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar top de causas"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar top de "
+                                                                "causas"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-table"),
                                                 ],
@@ -359,7 +438,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Muertes por sexo y departamento",
+                                                        (
+                                                            "Muertes por sexo y "
+                                                            "departamento"
+                                                        ),
                                                         id="viz-stacked-title",
                                                     ),
                                                     html.Button(
@@ -367,7 +449,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-stacked",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar datos sexo por departamento"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar datos sexo "
+                                                                "por departamento"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-stacked"),
                                                 ],
@@ -376,7 +463,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="loading-wrapper",
                                                 type="circle",
                                                 children=stacked.render(
-                                                    title="Muertes por sexo y departamento"
+                                                    title=(
+                                                        "Muertes por sexo y "
+                                                        "departamento"
+                                                    )
                                                 ),
                                             ),
                                         ],
@@ -390,7 +480,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="card-header",
                                                 children=[
                                                     html.H3(
-                                                        "Distribución por grupo de edad",
+                                                        (
+                                                            "Distribución por "
+                                                            "grupo de edad"
+                                                        ),
                                                         id="viz-hist-title",
                                                     ),
                                                     html.Button(
@@ -398,7 +491,12 @@ def build_layout(_: Dash) -> html.Div:
                                                         id="export-hist",
                                                         className="btn-export",
                                                         type="button",
-                                                        **{"aria-label": "Descargar distribución por edad"},
+                                                        **{
+                                                            "aria-label": (
+                                                                "Descargar "
+                                                                "distribución por edad"
+                                                            ),
+                                                        },
                                                     ),
                                                     dcc.Download(id="download-hist"),
                                                 ],
@@ -407,7 +505,10 @@ def build_layout(_: Dash) -> html.Div:
                                                 className="loading-wrapper",
                                                 type="circle",
                                                 children=hist.render(
-                                                    title="Distribución por grupo de edad"
+                                                    title=(
+                                                        "Distribución por "
+                                                        "grupo de edad"
+                                                    )
                                                 ),
                                             ),
                                         ],
@@ -416,14 +517,6 @@ def build_layout(_: Dash) -> html.Div:
                             ),
                         ],
                     ),
-                ],
-            ),
-            html.Footer(
-                className="app-footer",
-                role="contentinfo",
-                children=[
-                    html.Span("Fuente: DANE - Estadísticas Vitales 2019."),
-                    html.Span("Proyecto académico • Maestría IA • 2024"),
                 ],
             ),
         ],
