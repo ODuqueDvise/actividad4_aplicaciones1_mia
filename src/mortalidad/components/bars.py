@@ -58,7 +58,7 @@ def build_top_homicide_bars(
     ranked = (
         filtered.groupby(["muni_cod", "municipio", "depto"], as_index=False)
         .agg(total=("causa_cod", "size"))
-        .sort_values("total", ascending=False)
+        .sort_values(["total", "municipio"], ascending=[False, True])
         .head(top_n)
     )
 

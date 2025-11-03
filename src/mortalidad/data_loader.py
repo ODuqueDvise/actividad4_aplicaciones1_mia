@@ -191,14 +191,23 @@ def _prepare_records(raw: pd.DataFrame) -> pd.DataFrame:
     available = set(raw.columns)
 
     if {"FECHA_DEF", "FECHA_OCURR"} & available:
-        missing_columns = set(RECORDS_COLUMN_MAP) - available
-        if missing_columns:
+        renamed = raw.rename(columns=RECORDS_COLUMN_MAP)
+        required_columns = [
+            "depto_cod",
+            "muni_cod",
+            "sexo",
+            "grupo_edad",
+            "fecha",
+            "causa_cod",
+        ]
+        missing_targets = [
+            column for column in required_columns if column not in renamed.columns
+        ]
+        if missing_targets:
             raise ValueError(
-                f"Columnas faltantes en registros principales: {missing_columns}"
+                f"Columnas faltantes en registros principales: {set(missing_targets)}"
             )
-        records = raw.rename(columns=RECORDS_COLUMN_MAP)[
-            ["depto_cod", "muni_cod", "sexo", "grupo_edad", "fecha", "causa_cod"]
-        ].copy()
+        records = renamed[required_columns].copy()
         records["fecha"] = pd.to_datetime(
             records["fecha"], errors="raise"
         ).dt.tz_localize(None)
@@ -299,10 +308,16 @@ def _prepare_causes(raw: pd.DataFrame) -> pd.DataFrame:
         causes = causes.drop_duplicates(subset="causa_cod")
         return causes
 
-    missing_columns = set(CAUSES_COLUMN_MAP) - columns
-    if missing_columns:
-        raise ValueError(f"Columnas faltantes en catálogo de causas: {missing_columns}")
-    causes = raw.rename(columns=CAUSES_COLUMN_MAP)[["causa_cod", "causa"]].copy()
+    renamed = raw.rename(columns=CAUSES_COLUMN_MAP)
+    required_columns = ["causa_cod", "causa"]
+    missing_targets = [
+        column for column in required_columns if column not in renamed.columns
+    ]
+    if missing_targets:
+        raise ValueError(
+            f"Columnas faltantes en catálogo de causas: {set(missing_targets)}"
+        )
+    causes = renamed[required_columns].copy()
     causes["causa_cod"] = causes["causa_cod"].astype("string").str.strip().str.upper()
     causes["causa"] = causes["causa"].astype("string").str.strip()
     return causes.drop_duplicates(subset="causa_cod")
@@ -312,7 +327,22 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
     columns = set(raw.columns)
     standard_columns = {"depto_cod", "depto", "muni_cod", "municipio", "lat", "lon"}
 
-    if not standard_columns.issubset(columns):
+    renamed = raw.rename(columns=DIVIPOLA_COLUMN_MAP)
+    core_columns = {"depto_cod", "depto", "muni_cod", "municipio"}
+
+    if standard_columns.issubset(renamed.columns):
+        dataset = renamed[list(standard_columns)].copy()
+        for column in ["lat", "lon"]:
+            if column not in dataset.columns:
+                dataset[column] = pd.NA
+        renamed = dataset
+    elif core_columns.issubset(renamed.columns):
+        # Fill missing coordinate columns when catalog omits them.
+        for column in ["lat", "lon"]:
+            if column not in renamed.columns:
+                renamed[column] = pd.NA
+        renamed = renamed[list(standard_columns)].copy()
+    elif not standard_columns.issubset(columns):
         alt_required = {
             "COD_DEPARTAMENTO",
             "COD_MUNICIPIO",
@@ -343,14 +373,14 @@ def _prepare_divipola(raw: pd.DataFrame, source: Path) -> pd.DataFrame:
                 }
             )
         else:
-            missing_columns = set(DIVIPOLA_COLUMN_MAP) - columns
+            missing_columns = {
+                column for column in core_columns if column not in renamed.columns
+            }
             raise ValueError(
                 f"Columnas faltantes en catálogo Divipola: {missing_columns}"
             )
     else:
-        renamed = raw.rename(columns=DIVIPOLA_COLUMN_MAP)[
-            ["depto_cod", "depto", "muni_cod", "municipio", "lat", "lon"]
-        ].copy()
+        renamed = renamed[list(standard_columns)].copy()
 
     try:
         geo = pd.read_excel(source, sheet_name="Hoja3", header=0, engine="openpyxl")

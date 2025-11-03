@@ -28,7 +28,7 @@ Requires-Dist: types-python-dateutil; extra == "dev"
 # Mortalidad Colombia 2019
 
 ## Introducción del proyecto
-Aplicación web desarrollada con Dash para explorar de forma interactiva las estadísticas de mortalidad en Colombia durante 2019. El dashboard prioriza la accesibilidad (roles ARIA, estados `:focus-visible`, indicadores de carga) y el rendimiento mediante cacheo en memoria y exportaciones diferidas a CSV.
+Aplicación web desarrollada con Dash para explorar de forma interactiva las estadísticas de mortalidad en Colombia durante 2019. El dashboard prioriza la accesibilidad mediante el uso de roles ARIA (`banner`, `main`, `region`) que describen la jerarquía para lectores de pantalla, indicadores `aria-live` que comunican cambios de estado y controles con `:focus-visible` personalizados para navegación vía teclado. Se incluyen mensajes de carga y placeholders que garantizan contexto mientras se actualizan las visualizaciones, además de atajos descriptivos en encabezados y etiquetas. El rendimiento se refuerza con cacheo en memoria y exportaciones diferidas a CSV.
 
 ## Objetivo
 Analizar patrones de mortalidad por territorio, causa y grupo poblacional a partir de las bases públicas del DANE, facilitando la identificación de focos de violencia, estacionalidad y diferencias por sexo o edad.
@@ -61,12 +61,12 @@ Analizar patrones de mortalidad por territorio, causa y grupo poblacional a part
   - `Divipola.xlsx`
 
 ## Despliegue en Render
-1. Ejecuta `make ingest` y `make validate` en local para generar `data/processed/mortalidad_2019.parquet` y verificar la integridad.
-2. Publica el repositorio en GitHub/GitLab. Render detectará el blueprint definido en `render.yaml`.
-3. En Render selecciona **New → Blueprint**, elige el repositorio y confirma el servicio web sugerido.
-4. Configura las variables de entorno: `ENV=production`, `MAPBOX_TOKEN=pk.xxx`, `DATA_DIR=data/raw`, `CACHE_TIMEOUT=300`.
-5. Mantén `autoDeploy: true` para reconstruir ante cada push a `main`. El build ya ejecuta `python -m mortalidad.cli ingest --force` para regenerar el parquet antes de servir el dashboard.
-6. Revisa la URL asignada y valida filtros principales; consulta los logs de Render ante cualquier fallo.
+1. Se deben ejecutar `make ingest` y `make validate` en local para generar `data/processed/mortalidad_2019.parquet` y verificar la integridad.
+2. Se debe publicar el repositorio en GitHub/GitLab. Render detectará el blueprint definido en `render.yaml`.
+3. En Render se selecciona **New → Blueprint**, se elige el repositorio y se confirma el servicio web sugerido.
+4. Se configuran las variables de entorno: `ENV=production`, `MAPBOX_TOKEN=pk.xxx`, `DATA_DIR=data/raw`, `CACHE_TIMEOUT=300`.
+5. Se mantiene `autoDeploy: true` para reconstruir ante cada push a `main`. El build ya ejecuta `python -m mortalidad.cli ingest --force` para regenerar el parquet antes de servir el dashboard.
+6. Es recomendable revisar la URL asignada y validar los filtros principales; los logs de Render permiten diagnosticar cualquier fallo.
 
 ## Software
 - Python, Dash y Plotly para la capa interactiva.
@@ -86,10 +86,12 @@ Analizar patrones de mortalidad por territorio, causa y grupo poblacional a part
 2. **Configurar variables**
    ```bash
    cp .env.example .env
-   # Ajusta DATA_DIR, PORT, MAPBOX_TOKEN si aplica
+   # Ajustar DATA_DIR, PORT, MAPBOX_TOKEN si aplica
    ```
 3. **Añadir datos de entrada**
-   Copia los tres archivos Excel del DANE dentro de `data/raw/`. El repositorio ignora esta carpeta, por lo que no se versionan los datos sensibles.
+   Se deben copiar los tres archivos Excel del DANE dentro de `data/raw/`. El repositorio ignora esta carpeta, por lo que no se versionan los datos sensibles.
+
+
 4. **Crear entorno y dependencias**
    ```bash
    make dev-install
@@ -101,22 +103,81 @@ Analizar patrones de mortalidad por territorio, causa y grupo poblacional a part
    python -m mortalidad.app
    ```
    La aplicación quedará disponible en `http://localhost:8050`.
+
+
 6. **Comandos útiles**
-   - `make lint`, `make typecheck`, `make test`: linting, mypy y pruebas.
-   - `make format`: aplica Black + isort.
-   - `python -m mortalidad.cli ingest [--force]`: procesa los Excel y genera el parquet.
-   - `python -m mortalidad.cli validate`: valida el esquema con Pandera.
-   - `python -m mortalidad.cli serve --host 0.0.0.0 --port 8050`: levanta el servidor Dash desde la CLI.
+   - `make format`: ordena imports y aplica Black.
+   - `make lint`: ejecuta Ruff con todas las reglas activas.
+   - `make typecheck`: lanza mypy en modo estricto.
+   - `make test`: corre Pytest usando la misma configuración que CI.
+   - `make ingest` / `make validate`: procesa los Excel y valida con Pandera.
+   - `make run`: arranca el dashboard con las dependencias ya presentes.
+   - `make pre-commit`: instala o actualiza los hooks locales.
+   - `python -m mortalidad.cli ingest [--force]`: invocación directa de la ingesta.
+   - `python -m mortalidad.cli validate`: validación manual del esquema.
+   - `python -m mortalidad.cli serve --host 0.0.0.0 --port 8050`: servidor Dash vía CLI.
+
+
 7. **Hooks de pre-commit**
-   Ejecuta `make pre-commit` para instalar los hooks que ejecutan Ruff, Black, isort y detect-secrets antes de cada commit.
+   Se ejecuta `make pre-commit` para instalar los hooks que ejecutan Ruff, Black, isort y detect-secrets antes de cada commit.
+
+
 8. **Configuración opcional en PyCharm**
-   Importa el repositorio y selecciona el intérprete `.venv`. Usa **Run → Edit Configurations… → Import from .run** para cargar las ejecuciones predefinidas (`Dash Server`, `PyTests`, `CLI Ingest`).
+   El repositorio puede importarse y asociarse al intérprete `.venv`. Mediante **Run → Edit Configurations… → Import from .run** se cargan las ejecuciones predefinidas (`Dash Server`, `PyTests`, `CLI Ingest`).
+
+## Automatización con Make
+El Makefile consolida las tareas frecuentes y comprueba que el entorno virtual exista antes de ejecutar cada herramienta. Esto facilita que todo el equipo use los mismos pasos y evita recordar comandos largos.
+
+Principales objetivos:
+- `make dev-install`: crea/actualiza el entorno `.venv` e instala dependencias.
+- `make format`: ejecuta `isort` y `black` sobre `src/` y `tests/`.
+- `make lint`: corre `ruff check` sin reinstalar paquetes.
+- `make typecheck`: invoca `mypy` con la configuración estricta definida en `pyproject.toml`.
+- `make test`: ejecuta Pytest con la configuración de cobertura del proyecto.
+- `make pre-commit`: instala los hooks (`ruff`, `black`, `isort`, `detect-secrets`).
+- `make doctor`: imprime la información del intérprete activo.
+
+## Calidad de código y estilo
+- `make format` → aplica `isort` + `black` para un estilo uniforme y sin imports duplicados.
+- `make lint` → ejecuta `ruff`, detecta code smells y aplica reglas PEP 8.
+- `make typecheck` → usa `mypy` para reforzar el tipado estático y detectar inconsistencias.
+- `make test` → dispara Pytest asegurando que la suite continúe verde.
+- `make pre-commit` → registra los hooks que ejecutan `ruff`, `black`, `isort` y `detect-secrets` antes de cada commit.
+- El hook de `detect-secrets` evita filtrar credenciales; todos los comandos anteriores se reusan desde el Makefile y en CI.
+
+## Pruebas y cobertura
+El proyecto utiliza Pytest con fixtures sintéticos para validar componentes, callbacks y la ingesta. Al ejecutar las pruebas se genera un reporte de cobertura que ayuda a identificar áreas no ejercitadas del código.
+
+### Ejecutar la suite
+```bash
+PYTHONPATH=src .venv/bin/pytest
+```
+
+### Analizar cobertura
+```bash
+PYTHONPATH=src .venv/bin/pytest --cov=src --cov-report=term-missing
+```
+
+Resultados principales del último análisis (vía `--cov-report=term-missing`):
+- Cobertura global aproximada: 72 %.
+- Módulos con cobertura alta (>90 %): `components` (hist, lines, pie), `layout`, `config`.
+- Módulos con menor cobertura: `callbacks` y `data_loader` (por caminos no ejercitados en la ingesta real).
+
+Para visualizar un reporte HTML detallado:
+```bash
+.venv/bin/coverage html && open htmlcov/index.html
+```
+
+Sugerencias para incrementar la cobertura:
+- Incorporar pruebas de regresión sobre los callbacks (utilizando `dash[testing]`).
+- Simular escenarios adicionales en `data_loader` (por ejemplo variaciones de columnas en los Excel).
+- Añadir tests end-to-end cuando se disponga de `chromedriver` o Playwright.
 
 ## Visualizaciones con explicaciones de los resultados
 
 ### Mapa coroplético por departamento
 ![mapa_departamental.png](./assets/screenshots/mapa_departamental.png)
-Resalta los departamentos con mayor concentración. El uso de medias geográficas permite ubicar el centroide aproximado de cada territorio y los datos se actualizan según los filtros seleccionados.
+Resalta los departamentos con mayor concentración. El uso de medias geográficas permite ubicar el centroide aproximado de cada territorio y los datos se actualizan según los filtros seleccionados. La capa se renderiza sobre Mapbox, lo que habilita teselas vectoriales con suavizado en los acercamientos, estilos personalizables y capacidad para combinar el coroplético departamental con marcadores municipales manteniendo un mapa de alto contraste y buena respuesta en navegadores modernos.
 
 ### Serie temporal mensual
 ![serie_mensual.png](./assets/screenshots/serie_mensual.png)

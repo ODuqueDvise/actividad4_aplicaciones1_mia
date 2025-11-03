@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+
 import pandas as pd
 import pytest
 
@@ -69,6 +71,9 @@ def test_get_filters_state_homicides_only(sample_df: pd.DataFrame) -> None:
     assert len(result) == sample_df[sample_df["homicidio_x95"] == 1].shape[0]
 
 
+@pytest.mark.skipif(
+    shutil.which("chromedriver") is None, reason="chromedriver not available in PATH"
+)
 def test_dash_callbacks_render(dash_duo) -> None:
     """Dash app should render layout and respond to filter interactions."""
     app = create_app()
