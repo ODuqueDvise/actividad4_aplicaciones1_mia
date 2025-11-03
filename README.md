@@ -70,3 +70,16 @@ Aplicación Dash para explorar estadísticas de mortalidad en Colombia durante 2
 ```
 
 Documenta transformaciones de datos adicionales en `data/README.md` y conserva los scripts utilitarios en `src/mortalidad/utils/`.
+
+## Despliegue continuo en Render
+
+1. **Preparación de dataset**: Ejecuta `make ingest` localmente para refrescar `data/processed/mortalidad_2019.parquet`. Valida el resultado con `make validate` y asegurate de commitear los artefactos generados.
+2. **Repositorio Git**: Publica el proyecto en GitHub/GitLab. El archivo `render.yaml` en la raíz describe la infraestructura; Render lo detectará automáticamente.
+3. **Crear servicio**:
+   - En Render ve a *New → Blueprint* y selecciona este repositorio.
+   - Confirma el servicio web `mortalidad-colombia-2019` (plan `free`). El blueprint ya instala dependencias y ejecuta `python -m mortalidad.cli ingest --force` durante el build, por lo que el parquet se recrea en cada despliegue.
+   - Define las variables de entorno necesarias (`ENV=production`, `MAPBOX_TOKEN`, etc.) en la pestaña *Environment*.
+4. **Autodeploy**: Mantén habilitado `autoDeploy: true` (ya viene configurado) para que cada push a `main` dispare un nuevo build.
+5. **Verificación**: Tras el despliegue visita la URL asignada por Render y prueba los filtros principales. Consulta los logs en Render si algo falla.
+
+Sugerencia: agrega un workflow de CI que ejecute `make ingest && make validate` y pruebas antes de fusionar cambios a `main` para mantener el pipeline limpio.
